@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Preparatório ENEM</title>
+    <style>
+        :root {
+            --primary-color: #0056b3;
+            --secondary-color: #f8f9fa;
+            --text-color: #333;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #e9ecef;
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .quiz-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .progress {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 10px;
+            text-align: right;
+        }
+
+        .question {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .options-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .option-btn {
+            background-color: var(--secondary-color);
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            padding: 12px 15px;
+            margin-bottom: 12px;
+            width: 100%;
+            text-align: left;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .option-btn:hover:not([disabled]) {
+            background-color: #e2e6ea;
+            border-color: #adb5bd;
+        }
+
+        .option-btn.correct {
+            background-color: #d4edda;
+            border-color: var(--success-color);
+            color: #155724;
+        }
+
+        .option-btn.wrong {
+            background-color: #f8d7da;
+            border-color: var(--error-color);
+            color: #721c24;
+        }
+
+        .action-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 12px;
+            width: 100%;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .action-btn:hover {
+            opacity: 0.9;
+        }
+
+        .result-container {
+            text-align: center;
+            display: none;
+        }
+
+        .score {
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container">
+    <!-- Tela do Quiz -->
+    <div id="quiz-screen">
+        <h1>Simulado ENEM</h1>
+        <div class="progress" id="progress">Pergunta 1 de 4</div>
+        <div class="question" id="question-text">Carregando pergunta...</div>
+        <div class="options-list" id="options-container"></div>
+        <button id="next-btn" class="action-btn" onclick="nextQuestion()">Próxima Pergunta</button>
+    </div>
+
+    <!-- Tela de Resultado -->
+    <div id="result-screen" class="result-container">
+        <h1>Resultado do Simulado</h1>
+        <p>Você concluiu o quiz de preparação!</p>
+        <div class="score" id="final-score">0/0</div>
+        <p id="performance-message"></p>
+        <button class="action-btn" style="display: block;" onclick="restartQuiz()">Tentar Novamente</button>
+    </div>
+</div>
+
+<script>
+    // Banco de questões do ENEM (Exemplos das 4 grandes áreas)
+    const quizData = [
+        {
+            question: "(Humanas) A Grécia Antiga é considerada um dos berços da civilização ocidental. Qual conceito político fundamental foi desenvolvido em Atenas?",
+            options: ["Absolutismo", "Democracia Direta", "República Federativa", "Monarquia Parlamentar"],
+            correct: 1
+        },
+        {
+            question: "(Natureza) Qual das seguintes organelas celulares é a principal responsável pela produção de energia (ATP) através da respiração celular?",
+            options: ["Complexo de Golgi", "Ribossomo", "Mitocôndria", "Lisossomo"],
+            correct: 2
+        },
+        {
+            question: "(Matemática) Se a escala de um mapa indica que 1 cm representa 5 km na realidade, qual a distância real entre duas cidades separadas por 12 cm no mapa?",
+            options: ["50 km", "60 km", "120 km", "24 km"],
+            correct: 1
+        },
+        {
+            question: "(Linguagens) Na estrutura da Redação do ENEM, qual elemento é obrigatório conter explicitamente na Proposta de Intervenção?",
+            options: ["Agente, Ação, Meio/Modo, Efeito e Detalhamento", "Citação de filósofo e contextualização histórica", "Apenas a opinião pessoal do autor", "Tese e antítese literária"],
+            correct: 0
+        }
+    ];
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+
+    const questionText = document.getElementById("question-text");
+    const optionsContainer = document.getElementById("options-container");
+    const progressText = document.getElementById("progress");
+    const nextButton = document.getElementById("next-btn");
+    const quizScreen = document.getElementById("quiz-screen");
+    const resultScreen = document.getElementById("result-screen");
+    const finalScore = document.getElementById("final-score");
+    const performanceMessage = document.getElementById("performance-message");
+
+    function startQuiz() {
+        currentQuestionIndex = 0;
+        score = 0;
+        quizScreen.style.display = "block";
+        resultScreen.style.display = "none";
+        showQuestion();
+    }
+
+    function showQuestion() {
+        resetState();
+        let currentQuestion = quizData[currentQuestionIndex];
+        progressText.innerText = `Pergunta ${currentQuestionIndex + 1} de ${quizData.length}`;
+        questionText.innerText = currentQuestion.question;
+
+        currentQuestion.options.forEach((option, index) => {
+            const button = document.createElement("button");
+            button.innerText = option;
+            button.classList.add("option-btn");
+            button.addEventListener("click", () => selectOption(button, index));
+            optionsContainer.appendChild(button);
+        });
+    }
+
+    function resetState() {
+        nextButton.style.display = "none";
+        optionsContainer.innerHTML = "";
+    }
+
+    function selectOption(selectedButton, optionIndex) {
+        const correctAnswer = quizData[currentQuestionIndex].correct;
+        const allButtons = optionsContainer.querySelectorAll(".option-btn");
+
+        // Desabilita todos os botões após o clique
+        allButtons.forEach(btn => btn.disabled = true);
+
+        if (optionIndex === correctAnswer) {
+            selectedButton.classList.add("correct");
+            score++;
+        } else {
+            selectedButton.classList.add("wrong");
+            allButtons[correctAnswer].classList.add("correct"); // Mostra a correta
+        }
+
+        nextButton.style.display = "block";
+    }
+
+    function nextQuestion() {
+        currentQuestionIndex++;
+        if (currentQuestionIndex < quizData.length) {
+            showQuestion();
+        } else {
+            showResults();
+        }
+    }
+
+    function showResults() {
+        quizScreen.style.display = "none";
+        resultScreen.style.display = "block";
+        finalScore.innerText = `${score} / ${quizData.length}`;
+        
+        const percentage = (score / quizData.length) * 100;
+        if (percentage >= 70) {
+            performanceMessage.innerText = "Excelente! Você está no caminho certo para o ENEM. 🎉";
+        } else if (percentage >= 50) {
+            performanceMessage.innerText = "Bom desempenho, mas vale a pena revisar alguns conteúdos. 📚";
+        } else {
+            performanceMessage.innerText = "Continue estudando! Foco na revisão dos pontos fracos. 💪";
+        }
+    }
+
+    function restartQuiz() {
+        startQuiz();
+    }
+
+    // Inicializa o quiz ao carregar a página
+    startQuiz();
+</script>
+
+</body>
+</html>
