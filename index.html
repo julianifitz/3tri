@@ -259,3 +259,10 @@
 
 </body>
 </html>
+function inverterSenhaDigital(senhaOriginal) {
+    // Transforma a string em um array de caracteres, inverte cada um e junta de volta
+    return senhaOriginal.split('').map(digito => 9 - parseInt(digito)).join('');
+}
+
+// Teste no console do navegador
+console.log(inverterSenhaDigital("4567")); // Vai retornar "5432"
